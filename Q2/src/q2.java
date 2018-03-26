@@ -4,17 +4,12 @@ import java.util.concurrent.atomic.*;
 
 
 class Node{
-	//AtomicInteger Color = new AtomicInteger(0);
 	int Color = 0;
 	public int id;
 	public Node(int id) {
 		this.id = id;
 	}
-	ArrayList<Node> ChildNode = new ArrayList<Node>();
 	
-	public void AddChildNode(Node V) {
-		ChildNode.add(V);
-	}
 	
 	public void ColorNode() {
 		int color = 1 ;
@@ -35,37 +30,13 @@ class Node{
 				}
 			}
 		}
-//		if (this.id == adjList[0]) {
-//			System.out.println(adjList);
-//		}
 		this.Color = color;
 	}
 	
-	public ArrayList<Node> GetChildNodes() {
-		return ChildNode;
-	}
 	
-	public void PringChildNode() {
-		for (Node Node : ChildNode) {
-			
-			System.out.println(Node.id+" "+Node.Color);
-		}
-		
-	}
-}
-
-class Adjacency{
-	public final Node first;
-    public final Node second;
-     
-    public Adjacency(Node a, Node b) {
-        this.first = a;
-        this.second = b;
-    }
 }
 
 class Graph{
-	private ArrayList<Adjacency> Adjacencies = new ArrayList<Adjacency>();
 	private int[] AdjList;
 	private ArrayList<Node> Nodes = new ArrayList<Node>();
 	
@@ -73,9 +44,6 @@ class Graph{
 		return Nodes;
 	}
 	
-	public ArrayList<Adjacency> GetEdge(){
-		return Adjacencies;
-	}
 	
 	public void AddAdjacency(Node a, Node b, int index) {
 		AdjList[index*2] = a.id;
@@ -90,56 +58,26 @@ class Graph{
 		return AdjList;
 	}
 	
-	public void AddNode(Node node) {
-		Nodes.add(node);
-	}
 	
 	public void AddNodes(ArrayList<Node> Nodes) {
 		this.Nodes.clear();
 		this.Nodes.addAll(Nodes);
 	}
 	
-	public void AddAdjacency(Adjacency V) {
-		Adjacencies.add(V);
-	}
-	
-	public static void AddEage(Node V,Node V2) {
-		V.AddChildNode(V2);
-		V2.AddChildNode(V);
-	}
 
-	
-	public void RemoveAdjacency(Adjacency adjacency) {
-		Adjacencies.remove(adjacency);
-	}
-	
-	public ArrayList<Adjacency> GetAdjacencies() {
-		return Adjacencies;
-	}
-	
-	public boolean IsEmpty() {
-		return Nodes.isEmpty();
-	}
-	
-//	public void PrintGraph() {
-//		for (int i = 0; i < Adjacencies.size(); i++) {
-//			System.out.print("Node "+i+": ");
-//			Adjacencyies.get(i).PringChildNode();
-//			System.out.println("");
-//		}
-//	}
 }
 
 
 class Assign extends Thread{
 	//private Graph Conflicting;
 	ArrayList<Node> Nodes;
-	int ID;
+	int ID;	
 	int allthread;
+	//i and t are use for multi thread identify which part of list it should run
 	public Assign(ArrayList<Node> Nodes, int i, int t) {
 		//this.Conflicting = graph;
 		this.Nodes = Nodes;
-		ID = i;
+		ID = i;			
 		allthread = t;
 	}
 	@Override
@@ -166,43 +104,33 @@ class Assign extends Thread{
 
 
 class DetectConflicts extends Thread{
-	Graph Conflicting;
-	Graph NewConflicts;
 	
-	ArrayList<Node> Nodes;
-	ArrayList<Node> ConflictsNodes;
+//	ArrayList<Node> Nodes;
+//	ArrayList<Node> ConflictsNodes;
 	
 	AtomicIntegerArray conflictArray;
-	ArrayList<Adjacency> edges;
 	AtomicInteger arrayIndex;
 	
 	int ID;
 	int allthread;
 	
-	public DetectConflicts(ArrayList<Node> nodes, AtomicIntegerArray conflictArray, AtomicInteger arrayIndex, int i, int t) {
-		Nodes = nodes;
+	public DetectConflicts( AtomicIntegerArray conflictArray, AtomicInteger arrayIndex, int i, int t) {
+		//Nodes = nodes;
 		this.conflictArray = conflictArray;
 		this.arrayIndex = arrayIndex;
-		ID = i;
+		ID = i;			//same as assign
 		allthread = t;
 	}
-//	public DetectConflicts(Graph Conflicting, Graph NewConflicts) {
-//		this.Conflicting = Conflicting;
-//		this.NewConflicts = NewConflicts;
-//	}
-	
 	@Override
 	public void run() {
-		//int startNode = (Nodes.size()/allthread)  *ID;
 		int[] adjList = q2.Conflicting.getAdjList();
-		int startIndex = (Nodes.size()/allthread)  *ID;
+		int startIndex = (adjList.length/allthread)  *ID;
 		
-		int i = 0;
-		//System.out.println("startindex: "+ startIndex);
 		
 		for (int j = 0; j < adjList.length/allthread; j+=2) {
 			if (q2.NodesList.get(adjList[startIndex]).Color == q2.NodesList.get(adjList[startIndex+1]).Color) {
 				if (adjList[startIndex] > adjList[startIndex+1]) {
+					//atomically add conflict node to array list 
 					while (!conflictArray.compareAndSet(arrayIndex.getAndIncrement(), -1, adjList[startIndex]));
 				} else {
 					while (!conflictArray.compareAndSet(arrayIndex.getAndIncrement(), -1, adjList[startIndex+1]));
@@ -217,127 +145,79 @@ class DetectConflicts extends Thread{
 }
 
 
-class ColorThread extends Thread{
-//	Graph Conflicting;
-//	Graph NewConflicts;
-//	int id, end;
-//	
-//	ArrayList<Node> Nodes;
-//	ArrayList<Node> ConflictsNodes;
-	Thread assign;
-	Thread detectconflit; 
-//	
-//	public ColorThread(Graph Conflicting, Graph NewConflicts, int id, int end) {
-//		this.Conflicting = Conflicting;
-//		this.NewConflicts = NewConflicts;
-//		this.id = id;
-//		this.end = end;
-//	}
-	
-	public ColorThread(Thread assign, Thread detectconflit) {
-		this.assign = assign;
-		this.detectconflit = detectconflit;
-	}
-	@Override
-	public void run() {
-		assign.run();
-		try {
-			assign.join();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		detectconflit.start();
-	}
-}
-
-
 public class q2 {
-	public static Graph Conflicting;
-	public static ArrayList<Node> NodesList;
+	public static Graph Conflicting;			//static graph for getting the adjacent list
+	public static ArrayList<Node> NodesList; // a node list for get the node by id
 	
 	
 	public static void main(String[] args) {
 		//Graph graph = new Graph();
+		if (args.length<3) {
+			System.err.println("Please enter correct command!");
+			return;
+		}
+		int n = 0,e = 0,t = 0;
+		try {
+			n = Integer.parseInt(args[0]);
+			e = Integer.parseInt(args[1]);
+			t = Integer.parseInt(args[2]);
+			if (n<0||e<0||t<0) {
+				System.err.println("Please enter correct command!");
+				return;
+			}
+		} catch (NumberFormatException e1) {
+			System.err.println("Please enter correct command!");
+		}
 		
-		
-		int n = Integer.parseInt(args[0]);
-		int e = Integer.parseInt(args[1]);
-		int t = Integer.parseInt(args[2]);
 		System.out.println(n+" "+ e+" "+t);
-		long time = System.currentTimeMillis();
 		ArrayList<Node> Nodes = new ArrayList<Node>();
-		for (int i = 0; i < n; i++) {
+		for (int i = 0; i < n; i++) {//construct node 
 			Nodes.add(new Node(i));
 		}
-		NodesList = Nodes;
-		System.out.println("node time: "+ (System.currentTimeMillis() - time));
-		//Node test = Nodes.get(0);
-		
-		//ArrayList<Node> Nodes = graph.GetNodes();
+		NodesList = Nodes;//initialize nodeslist
 		
 		Conflicting = new Graph();
 		Conflicting.AddNodes(Nodes);
 		Conflicting.createAdjList(e);
-		time = System.currentTimeMillis();
-		while (e!=0) {
+		
+		while (e!=0) {//construct edge
 			int randomNode1 = (int)(Math.random()*Nodes.size());
 			Node Node = Nodes.get(randomNode1);
-			//for (Node Node : Nodes) {
 			int randomNodeId;
 			do {
 				randomNodeId = (int)(Math.random()*Nodes.size());
-			}while (randomNodeId == randomNode1);
-//			Conflicting.AddAdjacency(new Adjacency(Node, Nodes.get(randomNodeId)));
-//			Conflicting.AddAdjacency(new Adjacency(Nodes.get(randomNodeId), Node));
-			//Graph.AddEage(Node, Nodes.get(randomNodeId));
+			}while (randomNodeId == randomNode1); // avoid edge toward node itself
 			e--;
 			Conflicting.AddAdjacency(Node, Nodes.get(randomNodeId), e);
 		}
-		System.out.println("Edge time: " + (System.currentTimeMillis()-time));
-		ArrayList<Thread> conflictThread = new ArrayList<Thread>();
+		//System.out.println("Edge time: " + (System.currentTimeMillis()-time));
+		ArrayList<Thread> assignThread = new ArrayList<Thread>();
 		AtomicIntegerArray conflictArray = new AtomicIntegerArray(n);
 		ArrayList<Node> ConflictingNodes = new ArrayList<Node>(Conflicting.GetNodes());
-		//ArrayList<Adjacency> edges = Conflicting.GetAdjacencies();
-		//ConflictingNodes.addAll();
 		AtomicInteger arrayIndex  = new AtomicInteger(0);
-		for (int i = 0; i < n; i++) {
+		for (int i = 0; i < n; i++) {//initialize with -1 cause each data is a node id it contain 0
 			conflictArray.set(i, -1);
 		}
 		long Time = System.currentTimeMillis();
 		
 		
 		while (!ConflictingNodes.isEmpty()){
-			long assigntime = System.currentTimeMillis();
 			for (int i = 0; i<t ; i++) {
 				
 				Thread assign = new Assign(ConflictingNodes,i,t);
 				assign.start();
-				conflictThread.add(assign);
+				assignThread.add(assign);
 			}
-			//System.out.println(1);
-			//hard code a conflict
 			
 			
 			try {
 				//System.out.println(conflictThread.size());
-				for (Thread thread : conflictThread) {
-					thread.join();
+				for (Thread thread : assignThread) {
+					thread.join(); //waiting for assign stop
 					
 				}
-				
-				assigntime = System.currentTimeMillis() - assigntime;
-				System.out.println("assigntime : "+assigntime);
-				
-				
-//				int[] adjList = Conflicting.getAdjList();
-//				System.out.println(adjList[0]+":"+adjList[1]);
-//				NodesList.get(adjList[0]).Color = 1;
-//				NodesList.get(adjList[1]).Color = 1;
-				
-				assigntime = System.currentTimeMillis();
-				for (int i = 0; i<t ; i++) {
-					Thread detectconflit = new DetectConflicts(ConflictingNodes, conflictArray , arrayIndex, i, t);
+				for (int i = 0; i<t ; i++) {	//detect conflict
+					Thread detectconflit = new DetectConflicts( conflictArray , arrayIndex, i, t);
 					detectconflit.start();
 					detectconflit.join();
 				}
@@ -345,39 +225,27 @@ public class q2 {
 				
 				
 			} catch (InterruptedException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 			
-			conflictThread.clear();
-			//ConflictingNodes.clear();
+			assignThread.clear();//reset assign thread list
+			
 			ArrayList<Node> newconflict = new ArrayList<Node>();
-			//ArrayList<Adjacency> conflictedge = new ArrayList<Adjacency>();
+			
 			int i = 0;
-			//System.out.println(Nodes.size());
 			for ( i= 0; i < n; i++) {
 				int nodeid = conflictArray.get(i);
-				if (nodeid == -1) {
-					System.out.println("number of conflict: "+i);
+				if (nodeid == -1) {//break if there is no more conflict node
+					//System.out.println("number of conflict: "+i);
 					break;
 				}
 				conflictArray.set(i, -1);
 				newconflict.add(Nodes.get(nodeid));
-				//System.out.println("nodeid: "+ nodeid);
 			}
 			
 			arrayIndex.set(0);//reset arrayIndex
 			
-			if (ConflictingNodes.size()<n) {
-				System.out.println(i+" "+n);
-			}
 			ConflictingNodes = newconflict;
-			
-			assigntime = System.currentTimeMillis() - assigntime;
-			System.out.println("detect time : "+assigntime);
-//			for (Node node : newconflict) {
-//				System.out.println("conflict id: "+node.id);
-//			}
 			
 		}
 		
