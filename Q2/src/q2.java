@@ -172,6 +172,41 @@ class DetectConflicts extends Thread{
 	
 	@Override
 	public void run() {
+		int startNode = (Nodes.size()/allthread)  *ID;
+		if (ID == 0 && Nodes.size() <= allthread) {
+			for (Node node : Nodes) {
+				for (Node childnode : node.ChildNode) {
+					if (node.Color == childnode.Color && node.id > childnode.id) {
+						while (!conflictArray.compareAndSet(arrayIndex.getAndIncrement(), -1, node.id));
+						break;
+					}
+				}
+			}
+			return;
+		}
+		int i = 0;
+		for ( i= 0; i < Nodes.size()/allthread; i++) {
+			Node node = Nodes.get(startNode);
+			for (Node childnode : node.ChildNode) {
+				if (node.Color == childnode.Color && node.id > childnode.id) {
+					while (!conflictArray.compareAndSet(arrayIndex.getAndIncrement(), -1, node.id));
+					//conflictArray.set(conflict, node.id);
+					//conflict++;
+					break;
+				}
+			}
+		}
+		
+//		for (Node node : Nodes) {//写一个while循环寻找新的-1值 使用CAS 然后
+//			for (Node childnode : node.ChildNode) {
+//				if (node.Color == childnode.Color && node.id > childnode.id) {
+//					while (!conflictArray.compareAndSet(arrayIndex.getAndIncrement(), -1, node.id));
+//					//conflictArray.set(conflict, node.id);
+//					//conflict++;
+//					break;
+//				}
+//			}
+//		}
 		//AtomicIntegerArray array = new AtomicIntegerArray(100);
 		 //= new AtomicIntegerArray(100);
 //		edges = Conflicting.GetEdge();
@@ -194,16 +229,7 @@ class DetectConflicts extends Thread{
 //			e.printStackTrace();
 //		}
 		//int conflict = 0;
-		for (Node node : Nodes) {//写一个while循环寻找新的-1值 使用CAS 然后
-			for (Node childnode : node.ChildNode) {
-				if (node.Color == childnode.Color && node.id > childnode.id) {
-					while (!conflictArray.compareAndSet(arrayIndex.getAndIncrement(), -1, node.id));
-					//conflictArray.set(conflict, node.id);
-					//conflict++;
-					break;
-				}
-			}
-		}
+		
 		
 	}
 }
@@ -313,9 +339,12 @@ public class q2 {
 				assigntime = System.currentTimeMillis() - assigntime;
 				System.out.println("assigntime : "+assigntime);
 				assigntime = System.currentTimeMillis();
-				Thread detectconflit = new DetectConflicts(ConflictingNodes, conflictArray , arrayIndex, i, t);
-				detectconflit.start();
-				detectconflit.join();
+				for (int i = 0; i<t ; i++) {
+					Thread detectconflit = new DetectConflicts(ConflictingNodes, conflictArray , arrayIndex, i, t);
+					detectconflit.start();
+					detectconflit.join();
+				}
+				
 				
 				
 			} catch (InterruptedException e1) {
