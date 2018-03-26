@@ -313,6 +313,7 @@ public class q2 {
 				assigntime = System.currentTimeMillis() - assigntime;
 				System.out.println("assigntime : "+assigntime);
 				assigntime = System.currentTimeMillis();
+				int i = 0;
 				Thread detectconflit = new DetectConflicts(ConflictingNodes, conflictArray , arrayIndex, i, t);
 				detectconflit.start();
 				detectconflit.join();
@@ -332,6 +333,7 @@ public class q2 {
 			for ( i= 0; i < n; i++) {
 				int nodeid = conflictArray.get(i);
 				if (nodeid == -1) {
+					
 					break;
 				}
 				conflictArray.set(i, -1);
