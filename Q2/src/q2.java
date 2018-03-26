@@ -153,10 +153,17 @@ class DetectConflicts extends Thread{
 	ArrayList<Node> ConflictsNodes;
 	AtomicIntegerArray conflictArray;
 	ArrayList<Adjacency> edges;
+	AtomicInteger arrayIndex;
 	
-	public DetectConflicts(ArrayList<Node> nodes, AtomicIntegerArray conflictArray) {
+	int ID;
+	int allthread;
+	
+	public DetectConflicts(ArrayList<Node> nodes, AtomicIntegerArray conflictArray, AtomicInteger arrayIndex, int i, int t) {
 		Nodes = nodes;
 		this.conflictArray = conflictArray;
+		this.arrayIndex = arrayIndex;
+		ID = i;
+		allthread = t;
 	}
 //	public DetectConflicts(Graph Conflicting, Graph NewConflicts) {
 //		this.Conflicting = Conflicting;
@@ -186,41 +193,18 @@ class DetectConflicts extends Thread{
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
-		int conflict = 0;
-		for (Node node : Nodes) {
+		//int conflict = 0;
+		for (Node node : Nodes) {//写一个while循环寻找新的-1值 使用CAS 然后
 			for (Node childnode : node.ChildNode) {
 				if (node.Color == childnode.Color && node.id > childnode.id) {
-					conflictArray.set(conflict, node.id);
-					conflict++;
+					while (!conflictArray.compareAndSet(arrayIndex.getAndIncrement(), -1, node.id));
+					//conflictArray.set(conflict, node.id);
+					//conflict++;
 					break;
 				}
 			}
 		}
 		
-		
-		
-		
-		
-//		ArrayList<Node> Nodes = Conflicting.GetNodes();
-//		for (Node Node : Nodes) {
-//			ArrayList<Node> ChildNodes = Node.GetChildNodes();
-//			for (Node childnode : ChildNodes) {
-////				if (Node.Color == childnode.Color) {
-////					NewConflicts.AddNode(Node);
-////					
-////				}
-////				
-//				//atomic
-//				do {
-//					if (Node.Color == childnode.Color) {
-//						NewConflicts.AddNode(Node);
-//					}
-//				} while (Node.Color != childnode.Color);
-//				break;
-//				
-//				
-//			}
-//		}
 	}
 }
 
@@ -302,11 +286,13 @@ public class q2 {
 		ArrayList<Node> ConflictingNodes = Conflicting.GetNodes();
 		//ArrayList<Adjacency> edges = Conflicting.GetAdjacencies();
 		//ConflictingNodes.addAll();
-		
+		AtomicInteger arrayIndex  = new AtomicInteger(0);
 		for (int i = 0; i < n; i++) {
 			conflictArray.set(i, -1);
 		}
 		long Time = System.currentTimeMillis();
+		
+		
 		while (!ConflictingNodes.isEmpty()){
 			long assigntime = System.currentTimeMillis();
 			for (int i = 0; i<t ; i++) {
@@ -327,9 +313,11 @@ public class q2 {
 				assigntime = System.currentTimeMillis() - assigntime;
 				System.out.println("assigntime : "+assigntime);
 				assigntime = System.currentTimeMillis();
-				Thread detectconflit = new DetectConflicts(ConflictingNodes, conflictArray);
+				Thread detectconflit = new DetectConflicts(ConflictingNodes, conflictArray , arrayIndex, i, t);
 				detectconflit.start();
 				detectconflit.join();
+				
+				
 			} catch (InterruptedException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
@@ -362,6 +350,7 @@ public class q2 {
 			//System.out.println(ConflictingNodes.size());
 			
 		}
+		
 		Time = System.currentTimeMillis() - Time;
 		System.out.println("Total: "+Time);
 		
