@@ -124,6 +124,12 @@ class LockFreeQueue<T> implements Queue<T>{
 				if (first == last) {
 					//System.out.println(1);
 					if (next == null) {
+//						try {
+//							Thread.currentThread().sleep(10);
+//						} catch (InterruptedException e) {
+//							// TODO Auto-generated catch block
+//							e.printStackTrace();
+//						}
 						throw new EmptyQueueException();
 					} 
 					tail.compareAndSet(last, next);
@@ -162,7 +168,14 @@ class inqueueThread extends Thread{
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			if (q1.dequearray.get(n-1) != null) {
+			if (q1.finishFlag) {
+//				item[0] = (long) data.getAndIncrement();// insert one more prevent lock free queue bug
+//				item[1] = queue.enq(item);//in queue time
+//				try {
+//					sleep(10);
+//				} catch (InterruptedException e) {
+//					e.printStackTrace();
+//				}
 				break;
 			}
 		}
@@ -182,25 +195,26 @@ class dequeueThread extends Thread{
 	}
 	@Override
 	public void run() {
-		while(true) {
+		int dequeued = 0;
+		while(dequeued <n) {
 			try {
 				
-				
+				sleep(10);
 				Long[] item = queue.deq();
 				item[2] = System.nanoTime();
 				//System.out.println(1);
-				sleep(10);
+				dequeued++;
+				
 				int index;
 				
-				if ((index = dequearrayIndex.getAndIncrement()) >= n) {
-					
-					break;
-				}
+				index = dequearrayIndex.getAndIncrement();
 				//System.out.println(index);
 				q1.dequearray.compareAndSet(index, null, item);
 			} catch (EmptyQueueException e) {
+				//sleep(10);
 				continue;
-			} catch (InterruptedException e) {
+			} 
+			catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -213,6 +227,7 @@ public class q1 {
 	static volatile UnboundedQueue<Long[]> blockingQueue;
 	static volatile LockFreeQueue<Long[]> lockFreeQueue;
 	static AtomicReferenceArray<Long[]> dequearray;
+	public static volatile boolean finishFlag;
 	public static void main(String[] args) {
 		int p = 0,q = 0,n = 0;
 		try {
@@ -234,11 +249,16 @@ public class q1 {
 		testQueues.add(blockingQueue);
 		testQueues.add(lockFreeQueue);
 		
+//		long avaragelockfree = 0;
+//		long avarageBlocking = 0;
+		//for (int i1 = 0; i1 < 5; i1++) {
+			
 		
 		for (Queue<Long[]> queue : testQueues) {
 			//System.out.println("!");
 			System.out.println(queue.getClass());
-			dequearray = new AtomicReferenceArray<Long[]>(n);
+			finishFlag = false;
+			dequearray = new AtomicReferenceArray<Long[]>(n*q);
 			for (int i = 0; i < n ; i++) {
 				dequearray.set(i, null);
 			}
@@ -259,22 +279,36 @@ public class q1 {
 				for (dequeueThread dequeueThread : dqThreads) {
 					dequeueThread.join();
 				}
+				finishFlag = true;
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			System.out.println(System.currentTimeMillis()-time);
+			time = System.currentTimeMillis()-time;
 			
+			System.out.println(time);
+			if (queue.getClass() == blockingQueue.getClass()) {
+				avarageBlocking+=time;
+			} else {
+				avaragelockfree+=time;
+			}
+			
+			//sort and output
+			boolean outputFlag = false;
+			if (!outputFlag) {
+				continue;
+			}
 			long[] enqTimes = new long[n];
 			LinkedList<Long[]> sortList  = new LinkedList<Long[]>();
 			boolean insertFlag = false;
 			sortList.addFirst(dequearray.get(0));
 			for (int i = 1; i < n ; i++) {
+				
 				Long[] item = dequearray.get(i);
 				enqTimes[i] = item[1];
 				//System.out.println("id: "+item[0]+" enqueT: "+item[1]+" dequeT: "+item[2]);
 				//sorting the item
-				for (int j = 0; j < sortList.size(); j++) {
+				for (int j = sortList.size() -1; j >=0 ; j--) {
 					Long[] Item = sortList.get(j);
 					if (Item[1]>item[1]) {
 						sortList.add(j, item);
@@ -290,9 +324,13 @@ public class q1 {
 			}
 			
 			for (Long[] item : sortList) {
-				//System.out.println("id: "+item[0]+" enqueT: "+item[1]+" dequeT: "+item[2] +" inqueuetime: "+(item[2]-item[1]));
+				System.out.println("id: "+item[0]+" enqueT: "+item[1]+" dequeT: "+item[2] +" inqueuetime: "+(item[2]-item[1]));
 			}
 		}
-		
+	//	}
+//		System.out.println(blockingQueue.getClass());
+//		System.out.println(avarageBlocking/5);
+//		System.out.println(lockFreeQueue.getClass());
+//		System.out.println(avaragelockfree);
 	}
 }
